@@ -29,6 +29,14 @@ ninja -C build
 
 `sudo ninja -C build uninstall`
 
+## Running
+
+`qt-mpv-bg-wlr ~/reimu.mp4`
+
+## Controlling
+
+`echo 'cycle pause' | socat - /tmp/mpv-socket-eDP-1`
+
 ## Bug Reports
 
 Please file bug reports at <https://github.com/lisuke/qt-mpv-bg-wlr>
