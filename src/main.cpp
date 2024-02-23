@@ -41,17 +41,21 @@ int main(int argc, char *argv[])
     // qDebug() << parser.isSet(noLoopOption);
 
     Manager *manager = new Manager();
-    QString filepath = parser.positionalArguments()[0];
-    qDebug() << "filepath: " << filepath;
-    manager->mFiles.insert("*", QFileInfo(filepath).absoluteFilePath());
+    if (parser.positionalArguments().length() == 0) {
+        parser.showHelp();
+    } else {
+        QString filepath = parser.positionalArguments()[0];
+        qDebug() << "filepath: " << filepath;
+        manager->mFiles.insert("*", QFileInfo(filepath).absoluteFilePath());
 
-    // TODO
+        // TODO
 
-    QObject::connect(&app, &QApplication::screenAdded,
-                     [manager](QScreen *screen) { manager->screenAdd(screen); });
+        QObject::connect(&app, &QApplication::screenAdded,
+                         [manager](QScreen *screen) { manager->screenAdd(screen); });
 
-    // startup
-    manager->startup();
+        // startup
+        manager->startup();
 
-    return app.exec();
+        return app.exec();
+    }
 }
