@@ -5,6 +5,6 @@ option(
         'qt5',
         'qt6',
     ],
-    value: 'qt5',
+    value: 'qt6',
     description: 'Select the Qt version to use',
 )

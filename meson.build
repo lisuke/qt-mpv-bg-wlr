@@ -44,6 +44,11 @@ if get_option('use_qt_version') == 'qt5'
         modules: ['Widgets', 'Core'],
     )
 
+    layer_shell_qt_dep = dependency(
+        'LayerShellQt',
+        modules: ['LayerShellQt::Interface'],
+    )
+
 elif get_option('use_qt_version') == 'qt6'
     qt = import('qt6')
     qt_deps = dependency(
@@ -51,14 +56,14 @@ elif get_option('use_qt_version') == 'qt6'
         modules: ['Widgets', 'Core', 'OpenGLWidgets'],
     )
 
+    layer_shell_qt_dep = dependency(
+        'LayerShellQt',
+        modules: ['LayerShellQt::Interface'],
+    )
+
 endif
 
 mpv_dep = dependency('mpv')
-
-layer_shell_qt_dep = dependency(
-    'LayerShellQt',
-    modules: ['LayerShellQt::Interface'],
-)
 
 include = ['include']
 
