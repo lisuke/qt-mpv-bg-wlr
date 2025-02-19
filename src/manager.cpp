@@ -11,22 +11,30 @@
 #include <QFileInfo>
 #include <QScreen>
 #include <QDebug>
+#include <QProcess>
 
 #include <LayerShellQt/Window>
 #include <LayerShellQt/Shell>
 
-void Manager::setupWayland()
+void Manager::setupEnv()
 {
     if (QApplication::platformName() == "wayland") {
         LayerShellQt::Shell::useLayerShell();
     }
+
+    // mpv must
+    setlocale(LC_NUMERIC, "C");
+
+    // The Nvidia drivers don't work well with EGL
+    if (!isNvidiaGPU())
+        qputenv("QT_XCB_GL_INTEGRATION", "xcb_egl");
 }
 
 void Manager::setupLayerShell(QWindow *window, QScreen *screen)
 {
     LayerShellQt::Window *layerShellWindow = LayerShellQt::Window::get(window);
     // setLayer
-    layerShellWindow->setLayer(LayerShellQt::Window::Layer::LayerBottom);
+    layerShellWindow->setLayer(LayerShellQt::Window::Layer::LayerBackground);
     // setAnchors
     // layerShellWindow->setAnchors({});
     // setMargins
@@ -36,75 +44,45 @@ void Manager::setupLayerShell(QWindow *window, QScreen *screen)
     // setKeyboardInteractivity
     layerShellWindow->setKeyboardInteractivity(
             LayerShellQt::Window::KeyboardInteractivity::KeyboardInteractivityNone);
-    // setDesiredOutput
-    layerShellWindow->setDesiredOutput(screen);
+    // setScreenConfiguration
+    layerShellWindow->setScreenConfiguration(LayerShellQt::Window::ScreenFromQWindow);
 }
 
 Manager::Manager()
 {
-    setupWayland();
+    setupEnv();
 }
 
 Manager::~Manager() { }
 
 void Manager::screenAdd(QScreen *screen)
 {
-    qDebug() << "screenAdd: " << screen->name() << " "
-             << "scale: " << screen->devicePixelRatio() << " "
-             << "size: " << screen->size() << " "
-             << "count: " << mScreens.count() + 1;
-
-    // // QWindow *window = new QWindow(screen);
-    // // window->create();
-    // // QWidget *w = QWidget::createWindowContainer(window);
-    // QWidget *w = new QWidget;
-    // // w->setScreen(screen);
-    // w->createWinId();
-    // w->windowHandle()->setScreen(screen);
-
-    // MpvWidget *ww = new MpvWidget();
-    // ww->createWinId();
-    // ww->windowHandle()->setScreen(screen);
-    // ww->setScale(screen->devicePixelRatio());
-
-    // QVBoxLayout *layout = new QVBoxLayout();
-    // w->setLayout(layout);
-    // layout->addWidget(ww);
-    // setupLayerShell(w->windowHandle(), screen);
-
-    // QString filepath;
-    // if (mFiles.contains(screen->name())) {
-    //     filepath = mFiles.value(screen->name());
-    // } else {
-    //     filepath = mFiles.value("*");
-    // }
-
-    // w->show();
-    // ww->command(QStringList() << "loadfile" << filepath);
-    // qDebug() << "screen: " << ww->window()->windowHandle()->screen()->name();
+    qDebug() << "screenAdd: " << screen->name() << " " << "scale: " << screen->devicePixelRatio()
+             << " " << "size: " << screen->size() << " " << "count: " << mScreens.count() + 1;
 
     PaperWidget *paper = new PaperWidget();
 
+    // init root-window
+    paper->show();
+    paper->hide();
+    // or paper->winId();
+
+    // parent is necessary, ensure add-in paper
+    MpvWidget *m_mpv = new MpvWidget(paper);
+
+    // fullscreen
+    m_mpv->resize(screen->size());
+
     setupLayerShell(paper->windowHandle(), screen);
-
-    QVBoxLayout *layout = new QVBoxLayout();
-    paper->setLayout(layout);
-    paper->setContentsMargins({ 0, 0, 0, 0 });
-    layout->setContentsMargins({ 0, 0, 0, 0 });
-
-    MpvWidget *m_mpv = new MpvWidget();
-
-    layout->addWidget(m_mpv);
-    // fixed scale for hdpi screen
-    m_mpv->setScale(screen->devicePixelRatio());
-    m_mpv->setContentsMargins({ 0, 0, 0, 0 });
+    // show, ensure order
+    paper->show();
 
     m_mpv->setProperty("loop", true);
     m_mpv->setProperty("loop-playlist", true);
     m_mpv->setProperty("panscan", 1);
     m_mpv->setProperty("volume", 0);
-    auto str= QString("/tmp/mpv-socket-")+screen->name();
-    
+    auto str = QString("/tmp/mpv-socket-") + screen->name();
+
     m_mpv->setProperty("input-ipc-server", str.toStdString().c_str());
 
     QString filepath;
@@ -114,9 +92,6 @@ void Manager::screenAdd(QScreen *screen)
         filepath = mFiles.value("*");
     }
     m_mpv->command(QStringList() << "loadfile" << filepath);
-
-    paper->resize(screen->size());
-    paper->show();
 
     mScreens.insert(screen->name(), screen);
     mMpvs.insert(screen->name(), m_mpv);
@@ -158,4 +133,19 @@ void Manager::startup()
     for (QScreen *screen : qApp->screens()) {
         screenAdd(screen);
     }
+}
+
+bool Manager::isNvidiaGPU()
+{
+    QProcess process;
+    qDebug() << "manager:" << "Display devices:";
+    process.start("lspci", QStringList() << "-v" << "-d" << "::0300");
+    process.waitForFinished(1000);
+    QString result = process.readAllStandardOutput();
+    qDebug() << result;
+
+    if (result.contains("nvidia", Qt::CaseSensitivity::CaseInsensitive) > 0)
+        return true;
+    else
+        return false;
 }

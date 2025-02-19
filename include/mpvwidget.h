@@ -15,8 +15,8 @@ class MpvWidget Q_DECL_FINAL : public QOpenGLWidget
 public:
     MpvWidget(QWidget *parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
     ~MpvWidget();
+    void init_mpv();
     void command(const QVariant &params);
-    void setScale(double scale);
     void setProperty(const QString &name, const QVariant &value);
     QVariant getProperty(const QString &name) const;
 
@@ -37,8 +37,6 @@ private:
 
     mpv_handle *mpv;
     mpv_render_context *mpv_gl;
-
-    double m_scale = 1.0;
 };
 
 #endif // PLAYERWINDOW_H

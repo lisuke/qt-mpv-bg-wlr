@@ -17,8 +17,9 @@ class Manager Q_DECL_FINAL : public QObject
 public:
     Manager();
     ~Manager();
-    void setupWayland();
     void setupLayerShell(QWindow *window, QScreen *screen);
+    static void setupEnv();
+    static bool isNvidiaGPU();
 
 Q_SIGNALS:
 

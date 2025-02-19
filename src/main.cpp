@@ -21,11 +21,6 @@ int main(int argc, char *argv[])
 
     QApplication app(argc, argv);
 
-    // Qt6: removed Qt::AA_ImmediateWidgetCreation
-    QApplication::setAttribute(Qt::AA_ImmediateWidgetCreation);
-    // mpv must
-    setlocale(LC_NUMERIC, "C");
-
     QCommandLineParser parser;
     parser.setApplicationDescription(app.applicationName() + app.applicationVersion());
     parser.addHelpOption();

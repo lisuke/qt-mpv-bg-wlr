@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: GPL-3.0
 
 #include "mpvwidget.h"
+#include <mpv/client.h>
 #include <stdexcept>
 #include <QOpenGLContext>
 #include <QMetaObject>
@@ -25,13 +26,14 @@ MpvWidget::MpvWidget(QWidget *parent, Qt::WindowFlags f) : QOpenGLWidget(parent,
     if (!mpv)
         throw std::runtime_error("could not create mpv context");
 
-    mpv_set_option_string(mpv, "terminal", "yes");
-    mpv_set_option_string(mpv, "msg-level", "all=v");
     if (mpv_initialize(mpv) < 0)
         throw std::runtime_error("could not initialize mpv context");
 
-    // Request hw decoding, just for testing.
-    mpv::qt::set_option_variant(mpv, "hwdec", "auto");
+    mpv_set_option_string(mpv, "terminal", "yes");
+    mpv_set_option_string(mpv, "msg-level", "all=v");
+    mpv_set_option_string(mpv, "ytdl", "yes");
+    mpv_set_option_string(mpv, "vo", "libmpv");
+    mpv_set_option_string(mpv, "hwdec", "auto-copy");
 
     mpv_observe_property(mpv, 0, "duration", MPV_FORMAT_DOUBLE);
     mpv_observe_property(mpv, 0, "time-pos", MPV_FORMAT_DOUBLE);
@@ -77,6 +79,7 @@ void MpvWidget::initializeGL()
 
 void MpvWidget::paintGL()
 {
+    qreal m_scale = devicePixelRatio();
     mpv_opengl_fbo mpfbo{ static_cast<int>(defaultFramebufferObject()), width() * m_scale,
                           height() * m_scale, 0 };
     int flip_y{ 1 };
@@ -147,9 +150,4 @@ void MpvWidget::maybeUpdate()
 void MpvWidget::on_update(void *ctx)
 {
     QMetaObject::invokeMethod((MpvWidget *)ctx, "maybeUpdate");
-}
-
-void MpvWidget::setScale(double scale)
-{
-    m_scale = scale;
 }
